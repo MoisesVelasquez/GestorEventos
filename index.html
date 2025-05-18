@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestor de Eventos</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+  <style id="app-style">
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f8f9fa;
+    }
+    
+    .app-container {
+      height: 100vh;
+      max-width: 1200px;
+      margin: 0 auto;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      background-color: white;
+    }
+    
+    header {
+      background: linear-gradient(90deg, #4f46e5, #6366f1);
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .app-title {
+      margin: 0;
+      font-weight: 600;
+    }
+    
+    .main-content {
+      display: flex;
+      flex-direction: column;      /* stack vertically */
+      height: calc(100% - 70px);
+      gap: 1rem;
+    }
+    
+    .events-top {
+      flex: 2;                     /* take more space */
+      padding: 1rem;
+      background-color: #eef2ff;
+      border-radius: 8px;
+      overflow-y: auto;
+    }
+    
+    .events-top .event-card {
+      font-size: 1.1rem;           /* larger font */
+      border-left-width: 6px;
+      margin-bottom: 1rem;
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .calendar-bottom {
+      flex: 1;                     /* smaller area */
+      padding: 1rem;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: auto;
+    }
+    
+    .calendar-container {
+      flex: 1;
+      padding: 1rem;
+      overflow: auto;
+    }
+    
+    .sidebar {
+      width: 350px;
+      background-color: #f1f5f9;
+      padding: 1rem;
+      overflow-y: auto;
+      border-left: 1px solid #e2e8f0;
+    }
+    
+    .event-card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #4f46e5;
+    }
+    
+    .event-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .badge-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .fc-day-today {
+      background-color: rgba(79, 70, 229, 0.1) !important;
+    }
+    
+    .fc-daygrid-day-events {
+      min-height: 0 !important;
+    }
+    
+    .fc-event {
+      cursor: pointer;
+      background-color: #4f46e5;
+      border-color: #4f46e5;
+    }
+    
+    .fc .fc-daygrid-day.fc-day-today {
+      background-color: rgba(79, 70, 229, 0.1);
+    }
+    
+    .fc .fc-highlight {
+      background-color: rgba(79, 70, 229, 0.2);
+    }
+    
+    .event-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #4f46e5;
+      display: inline-block;
+      margin-right: 5px;
+    }
+    
+    .btn-primary {
+      background-color: #4f46e5;
+      border-color: #4f46e5;
+    }
+    
+    .btn-primary:hover {
+      background-color: #4338ca;
+      border-color: #4338ca;
+    }
+    
+    .btn-outline-primary {
+      color: #4f46e5;
+      border-color: #4f46e5;
+    }
+    
+    .btn-outline-primary:hover {
+      background-color: #4f46e5;
+      border-color: #4f46e5;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background-color: #4f46e5;
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1100;
+      transform: translateX(150%);
+      transition: transform 0.3s ease-in-out;
+    }
+    
+    .notification.show {
+      transform: translateX(0);
+    }
+    
+    .loading-spinner {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.7);
+      z-index: 1050;
+    }
+    
+    .selected-date {
+      background-color: #f1f5f9;
+      border-radius: 8px;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+    
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      color: #d1d5db;
+    }
+    
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .sidebar {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #e2e8f0;
+      }
+    }
+    
+    /* Highlight for selected day cell */
+    .fc-daygrid-day.selected-day {
+      background-color: rgba(79, 70, 229, 0.2) !important;
+      border: 2px solid #4f46e5;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <h1 class="app-title">Gestor de Eventos</h1>
+      <div>
+        <button id="new-event-btn" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#eventModal">
+          <i class="fas fa-plus me-2"></i>Nuevo Evento
+        </button>
+
+        <!-- +++ ADD 'Generate Random Quote' BUTTON +++ -->
+        <button id="random-quote-btn" class="btn btn-info ms-2">
+          <i class="fas fa-quote-right me-2"></i>Generar Evento Aleatorio
+        </button>
+
+        <button id="reset-events-btn" class="btn btn-outline-light ms-2">
+          <i class="fas fa-trash me-2"></i>Reiniciar
+        </button>
+      </div>
+    </header>
+    
+    <div class="main-content">
+      <!-- 1) Top: full-width events list -->
+      <div class="events-top">
+        <div id="selected-date" class="selected-date">
+          <i class="far fa-calendar me-2"></i>Eventos para hoy
+        </div>
+        <div id="events-list">
+          <div class="empty-state">
+            <i class="far fa-calendar-alt"></i>
+            <p>No hay eventos para la fecha seleccionada</p>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+              <i class="fas fa-plus me-2"></i>Añadir evento
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 2) Bottom: compact calendar -->
+      <div class="calendar-bottom">
+        <div id="calendar"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Event Modal -->
+  <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="eventModalLabel">Nuevo Evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="event-form">
+            <input type="hidden" id="event-id">
+            <div class="mb-3">
+              <label for="event-title" class="form-label">Título</label>
+              <input type="text" class="form-control" id="event-title" required>
+            </div>
+            <div class="mb-3">
+              <label for="event-description" class="form-label">Descripción</label>
+              <textarea class="form-control" id="event-description" rows="3"></textarea>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="event-date" class="form-label">Fecha</label>
+                <input type="date" class="form-control" id="event-date" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="event-time" class="form-label">Hora</label>
+                <input type="time" class="form-control" id="event-time" required>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="event-reminder" class="form-label">Recordatorio</label>
+              <select class="form-select" id="event-reminder">
+                <option value="">Sin recordatorio</option>
+                <option value="0">Al momento del evento</option>
+                <option value="5">5 minutos antes</option>
+                <option value="15">15 minutos antes</option>
+                <option value="30">30 minutos antes</option>
+                <option value="60">1 hora antes</option>
+                <option value="1440">1 día antes</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="event-guests" class="form-label">Invitados (direcciones de correo separadas por comas)</label>
+              <input type="text" class="form-control" id="event-guests" placeholder="ejemplo@correo.com, otro@correo.com">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="save-event-btn">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Confirmar eliminación</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Attendees Modal -->
+  <div class="modal fade" id="attendeesModal" tabindex="-1" aria-labelledby="attendeesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="attendeesModalLabel">Gestionar asistencia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="attendees-list">
+            <!-- Attendees will be listed here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Reset Confirmation Modal -->
+  <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="resetModalLabel">Confirmar reinicio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas reiniciar el calendario? Todos los eventos serán eliminados. Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirm-reset-btn">Reiniciar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Loading Spinner -->
+  <div class="loading-spinner" id="loading-spinner">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+  
+  <!-- Notification -->
+  <div class="notification" id="notification">
+    <span id="notification-message"></span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales-all.min.js"></script>
+
+  <script id="app-script">
+    document.addEventListener('DOMContentLoaded', function() {
+      // Variables globales
+      let currentDate = new Date();
+      let events = [];
+      let eventIdCounter = 1;
+      let selectedEventId = null;
+      let reminders = [];
+      let randomEventCounter = 1;
+      
+      // Cache elements and guard against missing nodes
+      const newEventBtn       = document.getElementById('new-event-btn');
+      const randomQuoteBtn    = document.getElementById('random-quote-btn');
+      const resetEventsBtn    = document.getElementById('reset-events-btn');
+      const confirmDeleteBtn  = document.getElementById('confirm-delete-btn');
+      const confirmResetBtn   = document.getElementById('confirm-reset-btn');
+      
+      // Inicializar FullCalendar
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        editable: true,
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: true,
+        events: function(info, successCallback) {
+          // Filtrar eventos por el rango de fechas solicitado por FullCalendar
+          const filteredEvents = events.map(event => ({
+            id: event.id,
+            title: event.title,
+            start: new Date(`${event.date}T${event.time}`),
+            allDay: false
+          }));
+          successCallback(filteredEvents);
+        },
+        eventClick: function(info) {
+          const eventId = parseInt(info.event.id);
+          selectDate(info.event.start);
+          highlightEvent(eventId);
+        },
+        dateClick: function(info) {
+          selectDate(info.date);
+        }
+      });
+      
+      calendar.render();
+      
+      // Cargar eventos desde LocalStorage
+      loadEvents();
+      // Configurar recordatorios para eventos existentes
+      setupAllReminders();
+      // Mostrar eventos para la fecha actual
+      selectDate(currentDate);
+      
+      // Configuración de modales
+      const eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+      const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+      const attendeesModal = new bootstrap.Modal(document.getElementById('attendeesModal'));
+      const resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+      
+      // Event Listeners
+      if (newEventBtn) {
+        newEventBtn.addEventListener('click', function() {
+          resetEventForm();
+          document.getElementById('eventModalLabel').textContent = 'Nuevo Evento';
+          
+          // Establecer la fecha seleccionada en el formulario
+          const dateInput = document.getElementById('event-date');
+          dateInput.value = formatDateForInput(currentDate);
+          
+          // Establecer una hora predeterminada
+          const timeInput = document.getElementById('event-time');
+          const now = new Date();
+          timeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        });
+      }
+      
+      const saveEventBtn = document.getElementById('save-event-btn');
+      if (saveEventBtn) {
+        saveEventBtn.addEventListener('click', saveEvent);
+      }
+      
+      if (resetEventsBtn) {
+        resetEventsBtn.addEventListener('click', function() {
+          resetModal.show();
+        });
+      }
+      
+      if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', function() {
+          if (selectedEventId) {
+            deleteEvent(selectedEventId);
+            deleteModal.hide();
+          }
+        });
+      }
+      
+      if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', function() {
+          resetEvents();
+          resetModal.hide();
+        });
+      }
+      
+      // +++ NEW: Random Quote Button Handler +++
+      if (randomQuoteBtn) {
+        randomQuoteBtn.addEventListener('click', () => {
+          showLoading();
+          
+          const now   = new Date();
+          const year  = now.getFullYear();
+          const month = now.getMonth();
+          // Obtener el último día del mes actual
+          const lastDay   = new Date(year, month + 1, 0).getDate();
+          // Día aleatorio entre 1 y lastDay
+          const randomDay = Math.floor(Math.random() * lastDay) + 1;
+          // Formatear fecha a 'yyyy-MM-dd'
+          const dateStr = [
+            year,
+            String(month + 1).padStart(2, '0'),
+            String(randomDay).padStart(2, '0')
+          ].join('-');
+          // Mantener la hora actual como 'HH:MM'
+          const timeStr = now.toTimeString().substr(0,5);
+           
+          // ←– BUILD new event with sequential title
+          const newEvent = {
+            id: eventIdCounter++,
+            title: `evento importante aleatorio ${randomEventCounter++}`,
+            description: `Generado el ${dateStr}`,
+            date: dateStr,
+            time: timeStr,
+            reminder: "",       // no reminder by default
+            guests: [],
+            attendees: []
+          };
+          
+          events.push(newEvent);
+          saveEvents();        // persist & refresh
+          selectDate(new Date(dateStr)); // show it in list on random date
+          
+          // ←– UPDATE notification text
+          showNotification(`Evento aleatorio generado el ${dateStr}`, 'success');
+          setTimeout(hideLoading, 500);
+        });
+      }
+      
+      // Funciones de gestión de eventos
+      function loadEvents() {
+        const storedEvents = localStorage.getItem('events');
+        if (storedEvents) {
+          events = JSON.parse(storedEvents);
+          if (events.length > 0) {
+            // Encontrar el ID más alto para continuar la secuencia
+            eventIdCounter = Math.max(...events.map(event => event.id)) + 1;
+          }
+          refreshCalendar();
+        }
+      }
+      
+      function saveEvents() {
+        localStorage.setItem('events', JSON.stringify(events));
+        refreshCalendar();
+      }
+      
+      function saveEvent() {
+        showLoading();
+        
+        const eventForm = document.getElementById('event-form');
+        if (!eventForm.checkValidity()) {
+          eventForm.reportValidity();
+          hideLoading();
+          return;
+        }
+        
+        const eventId = document.getElementById('event-id').value;
+        const title = document.getElementById('event-title').value;
+        const description = document.getElementById('event-description').value;
+        const date = document.getElementById('event-date').value;
+        const time = document.getElementById('event-time').value;
+        const reminder = document.getElementById('event-reminder').value;
+        const guests = document.getElementById('event-guests').value.split(',').map(email => email.trim()).filter(email => email);
+        
+        // Validar el formulario
+        if (!title || !date || !time) {
+          showNotification('Por favor, completa los campos requeridos', 'error');
+          hideLoading();
+          return;
+        }
+        
+        // Si es un nuevo evento
+        if (!eventId) {
+          const newEvent = {
+            id: eventIdCounter++,
+            title,
+            description,
+            date,
+            time,
+            reminder,
+            guests,
+            attendees: guests.map(email => ({
+              email,
+              status: 'pending' // pending, accepted, declined
+            }))
+          };
+          
+          events.push(newEvent);
+          showNotification('Evento creado correctamente');
+          
+          // Configurar recordatorio si está establecido
+          if (reminder) {
+            setupReminder(newEvent);
+          }
+        } else {
+          // Si es una edición
+          const eventIndex = events.findIndex(event => event.id === parseInt(eventId));
+          if (eventIndex !== -1) {
+            // Eliminar el recordatorio anterior si existe
+            const oldEvent = events[eventIndex];
+            clearReminder(oldEvent);
+            
+            // Actualizar el evento
+            events[eventIndex] = {
+              ...events[eventIndex],
+              title,
+              description,
+              date,
+              time,
+              reminder,
+              guests,
+              // Mantener los asistentes existentes y añadir nuevos
+              attendees: updateAttendeesList(events[eventIndex].attendees || [], guests)
+            };
+            
+            // Configurar nuevo recordatorio si está establecido
+            if (reminder) {
+              setupReminder(events[eventIndex]);
+            }
+            
+            showNotification('Evento actualizado correctamente');
+          }
+        }
+        
+        saveEvents();
+        eventModal.hide();
+        selectDate(new Date(date));
+        
+        setTimeout(hideLoading, 500);
+      }
+      
+      function deleteEvent(eventId) {
+        showLoading();
+        
+        const eventIndex = events.findIndex(event => event.id === eventId);
+        if (eventIndex !== -1) {
+          // Limpiar el recordatorio antes de eliminar
+          clearReminder(events[eventIndex]);
+          
+          // Eliminar el evento
+          events.splice(eventIndex, 1);
+          saveEvents();
+          selectDate(currentDate);
+          showNotification('Evento eliminado correctamente');
+        }
+        
+        setTimeout(hideLoading, 500);
+      }
+      
+      function resetEvents() {
+        showLoading();
+        
+        // Limpiar todos los recordatorios
+        events.forEach(event => clearReminder(event));
+        
+        // Reiniciar variables
+        events = [];
+        eventIdCounter = 1;
+        reminders = [];
+        
+        // Guardar cambios
+        saveEvents();
+        selectDate(currentDate);
+        showNotification('Todos los eventos han sido eliminados');
+        
+        setTimeout(hideLoading, 500);
+      }
+      
+      function selectDate(date) {
+        currentDate = new Date(date);
+
+        // 2.a) Remove previous highlight
+        document
+          .querySelectorAll('.fc-daygrid-day.selected-day')
+          .forEach(cell => cell.classList.remove('selected-day'));
+
+        // 2.b) Format the date to yyyy-MM-dd to match FullCalendar's data-date
+        const yyyy = currentDate.getFullYear();
+        const mm   = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dd   = String(currentDate.getDate()).padStart(2, '0');
+        const isoDate = `${yyyy}-${mm}-${dd}`;
+
+        // 2.c) Find the new cell and add our class
+        const dayCell = document.querySelector(
+          `.fc-daygrid-day[data-date="${isoDate}"]`
+        );
+        if (dayCell) dayCell.classList.add('selected-day');
+
+        // Actualizar el título a un rango de 3 días
+        const options = { weekday: 'short', day: 'numeric', month: 'short' };
+        const start = new Date(currentDate);
+        const end = new Date(currentDate);
+        end.setDate(end.getDate() + 2);
+        const startStr = start.toLocaleDateString('es-ES', options);
+        const endStr   = end  .toLocaleDateString('es-ES', options);
+        document.getElementById('selected-date').innerHTML = 
+          `<i class="far fa-calendar me-2"></i>Eventos para ${startStr} – ${endStr}`;
+        
+        // Actualizar la lista de eventos
+        updateEventsList();
+        
+        // Resaltar el día en el calendario
+        calendar.gotoDate(currentDate);
+      }
+      
+      function updateEventsList() {
+        const eventsListContainer = document.getElementById('events-list');
+        
+        // 1) Define start/end as yyyy-MM-dd strings (midnight)
+        const start = new Date(currentDate);
+        const startStr = start.toISOString().split('T')[0];
+        const end = new Date(currentDate);
+        end.setDate(end.getDate() + 2);
+        const endStr = end.toISOString().split('T')[0];
+        
+        // 2) Filter by comparing date strings
+        const filteredEvents = events.filter(event => {
+          const eventDateStr = event.date; // already yyyy-MM-dd
+          return eventDateStr >= startStr && eventDateStr <= endStr;
+        });
+        
+        if (filteredEvents.length === 0) {
+          eventsListContainer.innerHTML = `
+            <div class="empty-state">
+              <i class="far fa-calendar-alt"></i>
+              <p>No hay eventos para la fecha seleccionada</p>
+              <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+                <i class="fas fa-plus me-2"></i>Añadir evento
+              </button>
+            </div>
+          `;
+          return;
+        }
+        
+        // Ordenar eventos por hora
+        filteredEvents.sort((a, b) => a.time.localeCompare(b.time));
+        
+        // Generar HTML para cada evento
+        let eventsHTML = '';
+        
+        filteredEvents.forEach(event => {
+          // Formatear la hora para mostrar
+          const eventTime = formatTimeForDisplay(event.time);
+          
+          eventsHTML += `
+            <div class="event-card" id="event-${event.id}">
+              <div class="d-flex justify-content-between align-items-start">
+                <h5 class="card-title">${event.title}</h5>
+                <span class="badge bg-primary">${eventTime}</span>
+              </div>
+              <p class="card-text">${event.description || 'Sin descripción'}</p>
+              
+              ${event.guests && event.guests.length > 0 ? 
+                `<div class="mb-2">
+                  <small class="text-muted">
+                    <i class="fas fa-users me-1"></i>${event.guests.length} invitado${event.guests.length !== 1 ? 's' : ''}
+                  </small>
+                </div>` : ''}
+              
+              <div class="event-actions">
+                <button class="btn btn-sm btn-outline-primary edit-event-btn" data-id="${event.id}">
+                  <i class="fas fa-edit me-1"></i>Editar
+                </button>
+                <button class="btn btn-sm btn-outline-danger delete-event-btn" data-id="${event.id}">
+                  <i class="fas fa-trash me-1"></i>Eliminar
+                </button>
+                ${event.guests && event.guests.length > 0 ? 
+                  `<button class="btn btn-sm btn-outline-secondary attendees-btn" data-id="${event.id}">
+                    <i class="fas fa-user-check me-1"></i>Asistencia
+                  </button>` : ''}
+              </div>
+            </div>
+          `;
+        });
+        
+        eventsListContainer.innerHTML = eventsHTML;
+        
+        // Añadir event listeners a los botones
+        document.querySelectorAll('.edit-event-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const eventId = parseInt(this.getAttribute('data-id'));
+            editEvent(eventId);
+          });
+        });
+        
+        document.querySelectorAll('.delete-event-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const eventId = parseInt(this.getAttribute('data-id'));
+            selectedEventId = eventId;
+            deleteModal.show();
+          });
+        });
+        
+        document.querySelectorAll('.attendees-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const eventId = parseInt(this.getAttribute('data-id'));
+            showAttendeesModal(eventId);
+          });
+        });
+      }
+      
+      function editEvent(eventId) {
+        const event = events.find(event => event.id === eventId);
+        if (!event) return;
+        
+        document.getElementById('eventModalLabel').textContent = 'Editar Evento';
+        document.getElementById('event-id').value = event.id;
+        document.getElementById('event-title').value = event.title;
+        document.getElementById('event-description').value = event.description || '';
+        document.getElementById('event-date').value = event.date;
+        document.getElementById('event-time').value = event.time;
+        document.getElementById('event-reminder').value = event.reminder || '';
+        document.getElementById('event-guests').value = event.guests ? event.guests.join(', ') : '';
+        
+        eventModal.show();
+      }
+      
+      function showAttendeesModal(eventId) {
+        const event = events.find(event => event.id === eventId);
+        if (!event || !event.attendees || event.attendees.length === 0) return;
+        
+        const attendeesList = document.getElementById('attendees-list');
+        let attendeesHTML = `<h6 class="mb-3">Evento: ${event.title}</h6>`;
+        
+        event.attendees.forEach((attendee, index) => {
+          const statusClass = {
+            'pending': 'bg-warning',
+            'accepted': 'bg-success',
+            'declined': 'bg-danger'
+          }[attendee.status] || 'bg-secondary';
+          
+          const statusText = {
+            'pending': 'Pendiente',
+            'accepted': 'Aceptado',
+            'declined': 'Rechazado'
+          }[attendee.status] || 'Desconocido';
+          
+          attendeesHTML += `
+            <div class="card mb-2">
+              <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-user me-2"></i>
+                    <span>${attendee.email}</span>
+                  </div>
+                  <span class="badge ${statusClass}">${statusText}</span>
+                </div>
+                <div class="btn-group btn-group-sm mt-2">
+                  <button class="btn btn-outline-success update-status-btn" 
+                          data-event-id="${event.id}" 
+                          data-attendee-index="${index}" 
+                          data-status="accepted"
+                          ${attendee.status === 'accepted' ? 'disabled' : ''}>
+                    <i class="fas fa-check me-1"></i>Aceptar
+                  </button>
+                  <button class="btn btn-outline-danger update-status-btn" 
+                          data-event-id="${event.id}" 
+                          data-attendee-index="${index}" 
+                          data-status="declined"
+                          ${attendee.status === 'declined' ? 'disabled' : ''}>
+                    <i class="fas fa-times me-1"></i>Rechazar
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        attendeesList.innerHTML = attendeesHTML;
+        
+        // Añadir event listeners a los botones de estado
+        document.querySelectorAll('.update-status-btn').forEach(button => {
+          button.addEventListener('click', function() {
+            const eventId = parseInt(this.getAttribute('data-event-id'));
+            const attendeeIndex = parseInt(this.getAttribute('data-attendee-index'));
+            const status = this.getAttribute('data-status');
+            
+            updateAttendeeStatus(eventId, attendeeIndex, status);
+            attendeesModal.hide();
+          });
+        });
+        
+        attendeesModal.show();
+      }
+      
+      function updateAttendeeStatus(eventId, attendeeIndex, status) {
+        const eventIndex = events.findIndex(event => event.id === eventId);
+        if (eventIndex === -1) return;
+        
+        if (events[eventIndex].attendees && events[eventIndex].attendees[attendeeIndex]) {
+          events[eventIndex].attendees[attendeeIndex].status = status;
+          saveEvents();
+          showNotification('Estado de asistencia actualizado');
+        }
+      }
+      
+      function updateAttendeesList(currentAttendees, newGuests) {
+        // Mantener los asistentes existentes
+        const updatedAttendees = [...currentAttendees];
+        
+        // Añadir nuevos invitados que no estén en la lista actual
+        newGuests.forEach(email => {
+          if (!updatedAttendees.some(attendee => attendee.email === email)) {
+            updatedAttendees.push({
+              email,
+              status: 'pending'
+            });
+          }
+        });
+        
+        return updatedAttendees;
+      }
+      
+      function resetEventForm() {
+        document.getElementById('event-id').value = '';
+        document.getElementById('event-title').value = '';
+        document.getElementById('event-description').value = '';
+        document.getElementById('event-reminder').value = '';
+        document.getElementById('event-guests').value = '';
+      }
+      
+      function refreshCalendar() {
+        calendar.refetchEvents();
+      }
+      
+      function highlightEvent(eventId) {
+        // Quitar resaltado de todos los eventos
+        document.querySelectorAll('.event-card').forEach(card => {
+          card.style.borderLeftColor = '#4f46e5';
+          card.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+        });
+        
+        // Resaltar el evento seleccionado
+        const eventCard = document.getElementById(`event-${eventId}`);
+        if (eventCard) {
+          eventCard.style.borderLeftColor = '#22c55e';
+          eventCard.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.2)';
+          eventCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      
+      // Funciones de recordatorios
+      function setupReminder(event) {
+        if (!event.reminder) return;
+        
+        const eventDateTime = new Date(`${event.date}T${event.time}`);
+        let reminderTime;
+        
+        if (event.reminder === '0') {
+          reminderTime = eventDateTime;
+        } else {
+          // Restar los minutos al tiempo del evento
+          reminderTime = new Date(eventDateTime.getTime() - parseInt(event.reminder) * 60 * 1000);
+        }
+        
+        // Comprobar si el tiempo de recordatorio ya ha pasado
+        if (reminderTime <= new Date()) return;
+        
+        const reminder = {
+          eventId: event.id,
+          time: reminderTime,
+          timerId: setTimeout(() => {
+            showEventReminder(event);
+          }, reminderTime - new Date())
+        };
+        
+        // Guardar el recordatorio
+        reminders.push(reminder);
+      }
+      
+      function setupAllReminders() {
+        // Limpiar recordatorios anteriores
+        clearAllReminders();
+        
+        // Configurar recordatorios para todos los eventos que tienen uno
+        events.forEach(event => {
+          if (event.reminder) {
+            setupReminder(event);
+          }
+        });
+      }
+      
+      function clearReminder(event) {
+        const reminderIndex = reminders.findIndex(r => r.eventId === event.id);
+        if (reminderIndex !== -1) {
+          clearTimeout(reminders[reminderIndex].timerId);
+          reminders.splice(reminderIndex, 1);
+        }
+      }
+      
+      function clearAllReminders() {
+        reminders.forEach(reminder => {
+          clearTimeout(reminder.timerId);
+        });
+        reminders = [];
+      }
+      
+      function showEventReminder(event) {
+        const options = { hour: '2-digit', minute: '2-digit' };
+        const eventTime = new Date(`${event.date}T${event.time}`).toLocaleTimeString('es-ES', options);
+        
+        showNotification(`¡Recordatorio! "${event.title}" a las ${eventTime}`, 'reminder');
+      }
+      
+      // Funciones de UI
+      function showLoading() {
+        document.getElementById('loading-spinner').style.display = 'flex';
+      }
+      
+      function hideLoading() {
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
+      
+      function showNotification(message, type = 'success') {
+        const notification = document.getElementById('notification');
+        const notificationMessage = document.getElementById('notification-message');
+        
+        // Establecer el mensaje
+        notificationMessage.textContent = message;
+        
+        // Configurar color según el tipo
+        switch (type) {
+          case 'error':
+            notification.style.backgroundColor = '#ef4444';
+            break;
+          case 'reminder':
+            notification.style.backgroundColor = '#f59e0b';
+            break;
+          default:
+            notification.style.backgroundColor = '#4f46e5';
+        }
+        
+        // Mostrar la notificación
+        notification.classList.add('show');
+        
+        // Ocultar después de 3 segundos
+        setTimeout(() => {
+          notification.classList.remove('show');
+        }, 3000);
+      }
+      
+      // Funciones de utilidad
+      function formatDateForInput(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      function formatTimeForDisplay(timeString) {
+        const [hours, minutes] = timeString.split(':');
+        return `${hours}:${minutes}`;
+      }
+    });
+  </script>
+</body>
+</html>
