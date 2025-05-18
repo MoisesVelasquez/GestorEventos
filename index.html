@@ -454,6 +454,48 @@
       
       calendar.render();
       
+      // 1) Asegurar que loadEvents recupere de localStorage
+      function loadEvents() {
+        const storedEvents = localStorage.getItem('events');
+        if (storedEvents) {
+          events = JSON.parse(storedEvents);
+          if (events.length > 0) {
+            eventIdCounter = Math.max(...events.map(e => e.id)) + 1;
+          }
+          refreshCalendar();
+        }
+      }
+      
+      // 2) Guardar siempre vía saveEvents
+      function saveEvents() {
+        // Persistir en localStorage
+        localStorage.setItem('events', JSON.stringify(events));
+        refreshCalendar();
+      }
+      
+      // 3) Al reiniciar limpiar también localStorage
+      function resetEvents() {
+        showLoading();
+        
+        // Limpiar todos los recordatorios
+        events.forEach(event => clearReminder(event));
+        
+        // Reiniciar variables
+        events = [];
+        eventIdCounter = 1;
+        reminders = [];
+        
+        // Limpiar localStorage y refrescar interfaz
+        localStorage.removeItem('events');
+        refreshCalendar();
+        selectDate(currentDate);
+        showNotification('Todos los eventos han sido eliminados');
+        
+        setTimeout(hideLoading, 500);
+      }
+      
+      calendar.refetchEvents();
+      
       // Cargar eventos desde LocalStorage
       loadEvents();
       // Configurar recordatorios para eventos existentes
@@ -560,7 +602,6 @@
         if (storedEvents) {
           events = JSON.parse(storedEvents);
           if (events.length > 0) {
-            // Encontrar el ID más alto para continuar la secuencia
             eventIdCounter = Math.max(...events.map(event => event.id)) + 1;
           }
           refreshCalendar();
